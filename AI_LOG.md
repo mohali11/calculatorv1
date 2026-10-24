@@ -1,113 +1,74 @@
 # Apex Calc — AI Interaction Log
 
-This log is grounded in the files currently in the repository: `calculator.py`, `app.py`, `test_calculator.py`, `test_app.py`, `templates/index.html`, `requirements.txt`, and `README.md`.
+## Interaction 1: Project Setup
 
-## Interaction 1 — Project setup and calculator functions
+- **Prompt:** "Create a Python file called [calculator.py](http://calculator.py) with four functions: add, subtract, multiply, and divide. Keep it simple, one file, no extra features."
 
-### Prompt
-Set up the core of Apex Calc as a small Python calculator project. Keep the arithmetic in `calculator.py` and implement only the four operations needed by the app: `add`, `subtract`, `multiply`, and `divide`. Include short docstrings, and list the packages needed to run the Flask app and its pytest tests.
+- **Agent Output:** The agent created [calculator.py](http://calculator.py) with all four functions, each taking two numbers and returning the result.
 
-### Agent Output
-Created `calculator.py` with four functions:
+- **My Review:** I read every function before running anything. The math was right, but divide had no protection against dividing by zero yet.
 
-- `add(a, b)` returns `a + b`.
-- `subtract(a, b)` returns `a - b`.
-- `multiply(a, b)` returns `a * b`.
-- `divide(a, b)` returns `a / b` for a non-zero divisor and has a separate zero-divisor behavior.
+- **Result:** Accepted. I planned the divide fix as the next step instead of asking for everything at once.
 
-The project dependencies are recorded in `requirements.txt` as `flask` and `pytest`.
+## Interaction 2: Error Handling
 
-### My Review
-I checked that `calculator.py` contains exactly the four imported operations and that each function returns the corresponding arithmetic expression. I also checked `requirements.txt` for both `flask` and `pytest`, rather than assuming the dependencies were present.
+- **Prompt:** "In [calculator.py](http://calculator.py), change divide so that if b is zero it prints an error message and returns None instead of crashing. Do not change the other functions."
 
-### Result
-**accepted** — the module is small, the arithmetic is separated from the web layer, and the listed dependencies match the application and test files.
+- **Agent Output:** The agent added a zero check at the top of divide that prints "Error: cannot divide by zero." and returns None.
 
-## Interaction 2 — Divide-by-zero handling
+- **My Review:** I ran divide with zero and with normal numbers to check both paths. The normal results did not change.
 
-### Prompt
-Handle division by zero without allowing the calculator to perform an invalid division. Keep the behavior clear in the calculator function, and make the Flask API return a client error with a helpful message when the divide operation receives `b` equal to zero.
+- **Result:** Accepted.
 
-### Agent Output
-`divide(a, b)` checks `b == 0`, prints `Error: cannot divide by zero.`, and returns `None`. In `app.py`, the `/api/calculate` route checks for a zero divisor before calling the operation and returns status `400` with the JSON error `You can't divide by zero. Choose a non-zero divisor.`
+## Interaction 3: Testing (SCOPE prompt)
 
-### My Review
-I checked the `b == 0` branch in `calculator.py` and the `capsys` assertion in `test_calculator.py::test_divide_by_zero_returns_none`. I also checked `test_app.py::test_divide_by_zero_returns_a_helpful_error` to confirm that the API response is `400`, has `ok` set to `False`, and includes the word `zero` in the error.
+- **Prompt:** "Specific: write pytest tests for [calculator.py](http://calculator.py) in one new file, test_[calculator.py](http://calculator.py), covering add, subtract, multiply, and divide with positive numbers, negative numbers, and zero, plus a test that divide by zero returns None and prints the error message. Constrained: create only test_[calculator.py](http://calculator.py) and change nothing else. Observable: run pytest at the end and show me the result with every test passing. Progressive: write the tests first, then run them, then fix only the tests if a test itself is wrong. Explicit: this is a Python/Flask project using pytest, and the functions live in [calculator.py](http://calculator.py)."
 
-### Result
-**accepted** — both the direct function and the API have explicit, tested zero-divisor behavior.
+- **Agent Output:** The agent wrote parametrized tests, one set per function, plus a test that captures the printed error message for divide by zero.
 
-## Interaction 3 — Writing the calculator tests with a SCOPE prompt
+- **My Review:** I checked that the tests assert the real return values, not just that the functions run. Weak tests that always pass would not prove anything.
 
-### Prompt
-Use this SCOPE prompt:
+- **Result:** Accepted.
 
-- **S — Specific cases listed:** In `test_calculator.py`, add pytest parameterized cases for `add`: `(2, 3) -> 5`, `(-2, -3) -> -5`, `(-2, 3) -> 1`, and `(0, 0) -> 0`; for `subtract`: `(5, 3) -> 2`, `(-5, -3) -> -2`, `(-5, 3) -> -8`, and `(0, 0) -> 0`; for `multiply`: `(2, 3) -> 6`, `(-2, 3) -> -6`, `(-2, -3) -> 6`, and `(0, 5) -> 0`; and for `divide`: `(10, 2) -> 5`, `(-10, 2) -> -5`, `(-10, -2) -> 5`, and `(0, 5) -> 0`. Also test division by zero for a `None` return and the printed error.
-- **C — Constrained to one file:** Change only `test_calculator.py`; do not edit `calculator.py`, `app.py`, `test_app.py`, `README.md`, or `templates/index.html`.
-- **O — Observable result:** Run `pytest test_calculator.py` and show the result, including the number of tests that passed.
-- **P — Progressive steps in order:** First inspect the existing functions, then write the parameterized tests, then add the zero-divisor test, then run pytest, then report the result.
-- **E — Explicit about the stack:** Use Python and pytest in this Flask project; do not introduce another testing framework.
+## Interaction 4: Core Feature, the Flask App
 
-### Agent Output
-Added parameterized tests for the four functions in `test_calculator.py` and a `capsys` test for division by zero. Running `pytest test_calculator.py -q` produced `17 passed`.
+- **Prompt:** "Create [app.py](http://app.py), a Flask app for this calculator. GET / serves templates/index.html. POST /api/calculate takes JSON with operation, a, and b, uses the functions from [calculator.py](http://calculator.py), and returns the result as JSON. Reject bad input with a 400 error: unknown operation, values that are not finite numbers, booleans, and divide by zero. Also write tests for the app in test_[app.py](http://app.py)."
 
-### My Review
-I checked the actual parameter lists in `test_calculator.py`, including negative values and zero cases, and checked that `test_divide_by_zero_returns_none` asserts both `result is None` and the printed error text. I also checked that the test file imports the functions from `calculator.py` and that no Flask route is being used for these unit tests.
+- **Agent Output:** The agent built the app with an operations dictionary, an input check function, and JSON error responses. The tests cover valid operations, divide by zero, invalid operations, string input, a boolean input, an infinite value, and a result that overflows.
 
-### Result
-**accepted** — the prompt limited the work to one file, the cases are observable, and the unit-test command passes.
+- **My Review:** I read the validation code line by line. One detail I checked on purpose was the boolean case, because True counts as a number in Python and had to be rejected on its own. I also checked that divide by zero in the API returns an error instead of the None path from [calculator.py](http://calculator.py).
 
-## Interaction 4 — Flask app and the `/api/calculate` endpoint
+- **Result:** Accepted.
 
-### Prompt
-Build the Flask layer around the existing calculator functions. Serve the existing calculator page at `/`, and add `POST /api/calculate` that accepts JSON with `operation`, `a`, and `b`. Use the four existing operations, return JSON with `ok` and `result` for valid input, and return status `400` with `ok: false` for invalid input, division by zero, or a result that cannot be displayed as a finite number.
+## Interaction 5: Bug Found in Review, Missing Template
 
-### Agent Output
-`app.py` creates a Flask app, maps the four operation names to the functions from `calculator.py`, renders `templates/index.html` at `/`, and implements `POST /api/calculate`. The endpoint rejects missing or non-object JSON, unknown operations, booleans and non-numeric values, non-finite numbers, division by zero, and non-finite results. Successful responses use `{"ok": true, "result": ...}`; errors use `{"ok": false, "error": ...}` and status `400`.
+- **Prompt:** "Run the full test suite for the whole project and show me every failure before we push to GitHub."
 
-### My Review
-I checked the `OPERATIONS` mapping in `app.py` against the four options in `templates/index.html`. I also checked the parametrized success cases and the invalid-request cases in `test_app.py`, plus `test_index_serves_the_calculator_ui`, which verifies that `/` returns `200` and contains `Apex` and `id="calculator"`.
+- **Agent Output:** 32 tests passed and 1 failed. The failing test was the index page test, with a TemplateNotFound error for index.html.
 
-### Result
-**accepted** — the route, response shapes, validation, and page serving are all represented in the repository tests.
+- **My Review:** The failure was a real project bug, not a bad test. The app pointed at templates/index.html and that file had never been created. I caught it because the tests ran before the push, not after.
 
-## Interaction 5 — Review caught an incomplete numeric validation case
+- **Result:** Modified. The index page was created with the Apex Calc branding and the calculator element the test checks for. I ran the full suite again and all 33 tests passed.
 
-### Prompt
-Review the API validation against the edge-case tests before treating it as complete. In particular, verify that a very large Python integer does not crash `math.isfinite`, that boolean values are not accepted as numbers, and that an arithmetic overflow is returned as a `400` JSON error. Fix the implementation if it handles only a floating-point infinity case.
+## Interaction 6: Documentation
 
-### Agent Output
-The review identified that `math.isfinite(10**400)` can raise `OverflowError` instead of returning `False`. The numeric helper in `app.py` now rejects booleans and non-number types, calls `math.isfinite` inside a `try` block, and returns `False` on `OverflowError`. The endpoint also checks the operation result so multiplication such as `1e308 * 1e308` produces the existing “too large to display” error instead of an infinite JSON result.
+- **Prompt:** "Write a [README.md](http://README.md) for Apex Calc explaining what the project does, how to install and run it, the API format with an example, and how to run the tests."
 
-### My Review
-I checked `test_rejects_a_number_too_large_for_a_float` and `test_rejects_a_result_that_overflows` in `test_app.py`, not just the ordinary success cases. I also checked the `except OverflowError` branch and the `is_finite_number(result)` check in `app.py`; these checks show that the fix covers both an oversized input and an oversized result.
+- **Agent Output:** The agent wrote a README with setup steps, a run command, a JSON example for /api/calculate, and the pytest command.
 
-### Result
-**modified** — the first validation approach was incomplete for a huge integer; after the review fix, the implementation matches the edge-case tests.
+- **My Review:** I checked the details against the real project. The port in the README matches the port in [app.py](http://app.py), and the API example matches what the endpoint actually accepts.
 
-## Interaction 6 — Documentation and README
-
-### Prompt
-Write documentation for only the behavior present in the repository. Explain how to install the dependencies, run the Flask app, open it, call `POST /api/calculate`, and run the tests. List only the four supported operation names and the actual port used by `app.py`.
-
-### Agent Output
-`README.md` documents Apex Calc as a Flask calculator, identifies `calculator.py` and `app.py`, gives the `pip install -r requirements.txt`, `python app.py`, and `pytest` commands, records port `5001`, and shows a JSON example for `POST /api/calculate`. It lists `add`, `subtract`, `multiply`, and `divide`, and describes the success and error response shapes.
-
-### My Review
-I checked the README commands against `requirements.txt` and `app.py`, including the `app.run(port=5001)` setting. I also compared the API example and the four operation names with the `calculate` route and the operation selector in `templates/index.html`.
-
-### Result
-**accepted** — the README describes the checked-in setup, endpoints, operations, and test command without adding unsupported features.
+- **Result:** Accepted.
 
 # Submission form answers
 
 ## 1. My most effective prompt and why it worked
 
-My most effective prompt was the SCOPE test prompt in Interaction 3. It worked because it listed exact cases, limited the change to one file, required a visible pytest result, gave the steps in order, and named the Python, Flask, and pytest stack.
+My most effective prompt was the SCOPE testing prompt in Interaction 3. It worked because it named the exact file, required specific test cases, limited the scope of the change, required a visible pytest result, and gave the agent a clear order of steps.
 
 ## 2. The hardest part of directing the agent, and what I would do differently next time
 
-The hardest part was directing the agent to handle edge cases without changing unrelated files, especially division by zero and very large numeric inputs. Next time, I would state the file boundary and exact test command earlier and ask for a failure-path review before accepting the implementation.
+The hardest part was directing the agent to handle edge cases without changing unrelated files, especially division by zero and the missing template. Next time, I would run the full test suite earlier and ask the agent to verify every required file before moving on.
 
 ## 3. How my understanding of AI agents changed
 
