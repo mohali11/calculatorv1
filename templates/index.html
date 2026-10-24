@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apex Calc</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #f4f1ea;
+      color: #1d1713;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+    }
+    #calculator {
+      background: #fffdf8;
+      border: 1px solid rgba(53, 37, 29, 0.14);
+      border-radius: 16px;
+      padding: 28px;
+      width: min(340px, calc(100vw - 48px));
+      box-shadow: 0 18px 40px rgba(69, 43, 25, 0.12);
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.5rem;
+    }
+    p.sub {
+      margin: 0 0 20px;
+      color: #766457;
+      font-size: 0.9rem;
+    }
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin: 14px 0 6px;
+    }
+    input, select, button {
+      width: 100%;
+      box-sizing: border-box;
+      font: inherit;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(53, 37, 29, 0.25);
+      background: #fff;
+    }
+    button {
+      margin-top: 20px;
+      background: #b65326;
+      border-color: #b65326;
+      color: #fff9f0;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #93401c;
+    }
+    #result {
+      margin-top: 18px;
+      min-height: 1.4em;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    #result.error {
+      color: #b3261e;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <main id="calculator">
+    <h1>Apex Calc</h1>
+    <p class="sub">A small calculator, powered by a Flask API.</p>
+
+    <label for="a">First number</label>
+    <input id="a" type="number" step="any" placeholder="0">
+
+    <label for="operation">Operation</label>
+    <select id="operation">
+      <option value="add">Add</option>
+      <option value="subtract">Subtract</option>
+      <option value="multiply">Multiply</option>
+      <option value="divide">Divide</option>
+    </select>
+
+    <label for="b">Second number</label>
+    <input id="b" type="number" step="any" placeholder="0">
+
+    <button id="calculate" type="button">Calculate</button>
+    <div id="result" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const resultBox = document.getElementById("result");
+
+    document.getElementById("calculate").addEventListener("click", async () => {
+      const a = Number(document.getElementById("a").value);
+      const b = Number(document.getElementById("b").value);
+      const operation = document.getElementById("operation").value;
+
+      const response = await fetch("/api/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ operation, a, b }),
+      });
+      const data = await response.json();
+
+      if (data.ok) {
+        resultBox.textContent = "Result: " + data.result;
+        resultBox.classList.remove("error");
+      } else {
+        resultBox.textContent = data.error;
+        resultBox.classList.add("error");
+      }
+    });
+  </script>
+</body>
+</html>
